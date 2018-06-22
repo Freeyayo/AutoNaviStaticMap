@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+    <script src="http://webapi.amap.com/maps?v=1.4.6&key=56218c9711a89b0089c7bb9daa72644f "></script>
+    <script>
+
+    var lng,lat,desLng,desLat,minLng,minLat,minDesName,apiPath;
+    var arr = [];
+    var map= new AMap.Map('container', {
+        resizeEnable: false,
+        zoom:12
+    });
+    map.plugin('AMap.Geolocation', function() {
+        var geolocation = new AMap.Geolocation({
+            // 是否使用高精度定位，默认：true
+            enableHighAccuracy: true,
+            // 设置定位超时时间，默认：无穷大
+            timeout: 10000,
+            // 定位按钮的停靠位置的偏移量，默认：Pixel(10, 20)
+            buttonOffset: new AMap.Pixel(10, 20),
+            //  定位成功后调整地图视野范围使定位位置及精度范围视野内可见，默认：false
+            zoomToAccuracy: true,
+            //  定位按钮的排放位置,  RB表示右下
+            buttonPosition: 'RB'
+        });
+
+        geolocation.getCurrentPosition();
+        AMap.event.addListener(geolocation, 'complete', onComplete);
+        AMap.event.addListener(geolocation, 'error', onError);
+
+        function onComplete (data) {
+            //console.log(data);
+            lng = data.position.lng;
+            lat = data.position.lat;
+            //console.log(lng,lat);
+            $.ajax({
+                            type: "GET",
+                            url: "http://restapi.amap.com/v3/place/around?key=4cddd6fde8d878964645d917ad9aa124&location="+lng+","+lat+"&keywords=大学&types=&offset=20&page=1&extensions=all",
+                            data: '',
+                            dataType: "json",
+                            success: function(data){
+                                //console.log(data)
+                                for(let i=0;i<data.pois.length;i++){
+                                    let theLocation = data.pois[i].location;
+                                    let names = data.pois[i].name;
+                                    //console.log(typeof theLocation)
+                                    desLng = theLocation.split(',')[0];
+                                    desLat = theLocation.split(',')[1];
+                                    //console.log(desLng,desLat);
+                                    let distance = Math.sqrt((lng-desLng)*(lng-desLng)+(lat-desLat)*(lat-desLat));
+                                    arr.push(distance);
+                                    if(distance !== 0){
+                                        if(distance === Math.min.apply(null,arr)){
+                                            minLng = desLng;
+                                            minLat = desLat;
+                                            minDesName = names;
+                                        }
+                                    }
+                                }
+                                //console.log(Math.min.apply(null,arr))
+                                //console.log(minLng,minLat,minDesName)
+                                apiPath = "http://restapi.amap.com/v3/staticmap?location="+lng+","+lat+"&paths=5,0x808080,1,,:"+minLng+","+minLat+";"+lng+","+lat+"&zoom=13&scale=2&size=400*400&labels="+minDesName+",2,0,13,0xFFFFFF,0xffa500:"+minLng+","+minLat+"8&markers=mid,,你:"+lng+","+lat+"|mid,0xFFFF00,:"+minLng+","+minLat+"&key=4cddd6fde8d878964645d917ad9aa124"
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('GET', apiPath, true);
+                                xhr.responseType = "blob";
+                                xhr.onload = function() {
+                                    if (this.status === 200) {
+                                        var blob = this.response;
+                                        var img = document.createElement("img");
+                                        img.onload = function(e) {
+                                            window.URL.revokeObjectURL(img.src);
+                                        };
+                                        img.src = window.URL.createObjectURL(blob);
+                                        document.body.appendChild(img);
+                                    }
+                                };
+                                xhr.send();
+                            }
+                        })
+        }
+
+        function onError (data) {
+            // 定位出错
+        }
+    });
+
+
+
+    </script>
+</body>
+</html>
