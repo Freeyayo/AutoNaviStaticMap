@@ -12,6 +12,7 @@
 
     var lng,lat,desLng,desLat,minLng,minLat,minDesName,apiPath;
     var arr = [];
+    var zoom = 13;
     var map= new AMap.Map('container', {
         resizeEnable: false,
         zoom:12
@@ -38,7 +39,7 @@
             //console.log(data);
             lng = data.position.lng;
             lat = data.position.lat;
-            //console.log(lng,lat);
+            console.log(lng,lat);
             $.ajax({
                             type: "GET",
                             url: "http://restapi.amap.com/v3/place/around?key=4cddd6fde8d878964645d917ad9aa124&location="+lng+","+lat+"&keywords=大学&types=&offset=20&page=1&extensions=all",
@@ -59,13 +60,31 @@
                                         if(distance === Math.min.apply(null,arr)){
                                             minLng = desLng;
                                             minLat = desLat;
-                                            minDesName = names;
+                                            console.log(distance)
+                                            if(0.02 > distance > 0.011){
+                                                zoom = 12;
+                                            }else if(0.0333 > distance > 0.02){
+                                                zoom = 11;
+                                            }else if(distance > 0.0333){
+                                                zoom = 10;
+                                            }else{
+                                                zoom = 8
+                                            }
+                                            if(names.length >= 14){
+                                                var strIndex = names.indexOf('大学');
+                                                if(strIndex >= 12){
+                                                    minDesName = '名字太长无法显示';
+                                                }else{
+                                                    minDesName = names.substr(0,strIndex+2) + '相关地';
+                                                }
+                                            }
+                                            console.log(minDesName)
                                         }
                                     }
                                 }
                                 //console.log(Math.min.apply(null,arr))
                                 //console.log(minLng,minLat,minDesName)
-                                apiPath = "http://restapi.amap.com/v3/staticmap?location="+lng+","+lat+"&paths=5,0x808080,1,,:"+minLng+","+minLat+";"+lng+","+lat+"&zoom=13&scale=2&size=400*400&labels="+minDesName+",2,0,13,0xFFFFFF,0xffa500:"+minLng+","+minLat+"8&markers=mid,,你:"+lng+","+lat+"|mid,0xFFFF00,:"+minLng+","+minLat+"&key=4cddd6fde8d878964645d917ad9aa124"
+                                apiPath = "http://restapi.amap.com/v3/staticmap?location="+lng+","+lat+"&paths=5,0x808080,1,,:"+minLng+","+minLat+";"+lng+","+lat+"&zoom="+zoom+"&scale=2&size=300*300&labels="+minDesName+",2,0,13,0xFFFFFF,0xffa500:"+minLng+","+minLat+"8&markers=mid,,你:"+lng+","+lat+"|mid,0xFFFF00,:"+minLng+","+minLat+"&key=4cddd6fde8d878964645d917ad9aa124";
                                 var xhr = new XMLHttpRequest();
                                 xhr.open('GET', apiPath, true);
                                 xhr.responseType = "blob";
